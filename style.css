@@ -1,0 +1,104 @@
+.status {
+    position: fixed;
+    top: 1vh;
+    left: 1vw;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    font-family: "Lato", sans-serif;
+    font-size: clamp(18px, 4vw, 24px);
+}
+
+.status p {
+    margin: 2px;
+}
+
+.wordBuffer {
+    position: fixed;
+    background-color: blue;
+    width: 27.5vw;
+    height: 12vh;
+    left: 24.8vw;
+    top: 2.1vh;
+}
+
+.timeLimit {
+    position: fixed;
+    background-color: aqua;
+    width: 23vw;
+    height: 12vh;
+    left: 55vw;
+    top: 2.1vh;
+}
+
+.lives {
+    position: fixed;
+    background-color: pink;
+    width: 15vw;
+    height: 12vh;
+    left: 80vw;
+    top: 2.1vh;
+}
+.previousWords {
+    background-color: red;
+    position: fixed;
+    width: 39vw;
+    height: 50vh;
+    left: 29vw;
+    top: 18vh;
+
+    display: grid;
+    grid-template:
+    20%
+    20%
+    20%
+    20%
+    20%
+    / 20% 20% 20% 20% 20%;
+}
+
+.keyboard {
+    position: fixed;
+    top: 75vh;
+    left: 0;
+    right: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.key {
+    flex: 0 1 auto;
+    width: min(150px, 3vw);
+    height: min(150px, 3vw);
+    aspect-ratio: 1 / 1;
+    font-family: "Lato", sans-serif;
+    font-size: clamp(12px, 2vw, 24px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.enterWord {
+    position: fixed;
+    top: 82vh;
+    left: 75vw;
+    width: min(300px, 6vw);
+    height: min(250px, 5vw);
+    max-width: 450px;
+    max-height: 250px;
+    aspect-ratio: 2 / 1;
+    font-family: "Lato", sans-serif;
+    font-size: clamp(18px, 4vw, 36px);
+}
