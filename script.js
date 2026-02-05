@@ -10,10 +10,12 @@ guessHTML.innerText = `${guessCounter} Guesses`;
 minesHTML.innerText = `${minesRemain} 💣`;
 
 enterButton.addEventListener("click", function () {
-    if (guessCounter > 0) guessCounter--;
-    guessHTML.innerText = `${guessCounter} Guesses`;
+    if (guessCounter > 0) {
+        guessCounter--;
+        guessHTML.innerText = `${guessCounter} Guesses`;
 
-    let testText = document.createElement("p");
-    testText.innerText = `Word ${21-guessCounter}`;
-    wordHistory.append(testText);
+        let testText = document.createElement("p");
+        testText.innerText = `Word ${21-guessCounter}`;
+        wordHistory.append(testText);
+    }
 });
