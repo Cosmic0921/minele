@@ -11,10 +11,10 @@ minesHTML.innerText = `${minesRemain} 💣`;
 
 enterButton.addEventListener("click", function () {
     if (guessCounter > 0) {
+        guessCounter--;
         guessHTML.innerText = `${guessCounter} Guesses`;
         let testText = document.createElement("p");
-        testText.innerText = `Word ${26-guessCounter}`;
+        testText.innerText = `Word ${25-guessCounter}`;
         wordHistory.append(testText);
-        guessCounter--;
     }
 });
