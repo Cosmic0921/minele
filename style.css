@@ -16,32 +16,74 @@
 
 .wordBuffer {
     position: fixed;
-    background-color: blue;
+    outline: 3px solid blue;
+
     width: 27.5vw;
-    height: 12vh;
+    height: auto;
+
     left: 24.8vw;
     top: 2.1vh;
+
+    display: grid;
+    grid-template-columns: repeat(var(--word-length, 7), 1fr);
+    gap: 6px;
+    padding: 8px;
 }
+
+
+.bufferLetter {
+    background: #222;
+    color: white;
+    font-family: "Lato", sans-serif;
+    font-size: clamp(24px, 4vw, 48px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+
+    max-width: 60px;
+    max-height: 60px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+}
+
+.bufferLetter.correct {
+    background: green;
+}
+
+.bufferLetter.misplaced {
+    background: goldenrod;
+}
+
+.bufferLetter.absent {
+    background: #444;
+}
+
 
 .timeLimit {
     position: fixed;
-    background-color: aqua;
+    outline: 3px solid red;
     width: 23vw;
     height: 12vh;
     left: 55vw;
     top: 2.1vh;
+    will-change: transform;
+
+    text-align: center;
+    font-family: "Lato", sans-serif;
+    font-size: clamp(18px, 4vw, 72px);
 }
 
 .lives {
     position: fixed;
-    background-color: pink;
+    outline: 3px solid pink;
     width: 15vw;
     height: 12vh;
     left: 80vw;
     top: 2.1vh;
 }
 .previousWords {
-    background-color: red;
+    outline: 3px solid aqua;
     position: fixed;
     width: 39vw;
     height: 50vh;
@@ -58,6 +100,60 @@
     / 20% 20% 20% 20% 20%;
 }
 
+.historyLetter.correct {
+    background: greenyellow;
+}
+.historyLetter.misplaced {
+    background: gold;
+}
+.historyLitter.absent {
+    background: #444;
+}
+.bufferLetter.reveal {
+    animation: flip 0.4s ease forwards;
+}
+
+@keyframes flip {
+    0%   { transform: rotateX(0deg);  }
+    50%  { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg);  }
+}
+
+
+
+.letterBoard {
+    outline: 3px solid rgb(0, 255, 47);
+    position: fixed;
+    width: 25vw;
+    height: 33vh;
+    left: 70vw;
+    top: 35vh;
+
+
+    display: grid;
+    grid-template:
+    20% 20% 20% 20% 20%
+    / 20% 20% 20% 20% 20%;
+}
+.historyRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-family: "Lato", sans-serif;
+    font-weight: 700;
+
+    font-size: clamp(20px, 2.5vw, 24px);
+    color: black;
+
+    background: #eee;
+    border-radius: 8px;
+
+    height: 50%;
+
+    aspect-ratio: 1 / 1;
+}
+
 .keyboard {
     position: fixed;
     top: 75vh;
@@ -71,6 +167,19 @@
     max-width: 900px;
     margin: 0 auto;
 }
+
+.key.correct {
+    background: green;
+}
+
+.key.misplaced {
+    background: goldenrod;
+}
+
+.key.absent {
+    background: #444;
+}
+
 
 .row {
     display: flex;
@@ -90,12 +199,25 @@
     justify-content: center;
 }
 
+.removeLetter {
+    position: fixed;
+    top: 75vh;
+    left: 75vw;
+    width: min(150px, 6vw);
+    height: min(200px, 5vh);
+    max-width: 450px;
+    max-height: 200px;
+    aspect-ratio: 3 / 1;
+    font-family: "Lato", sans-serif;
+    font-size: clamp(6px, 4vw, 20px);
+}
+
 .enterWord {
     position: fixed;
     top: 82vh;
     left: 75vw;
     width: min(300px, 6vw);
-    height: min(250px, 5vw);
+    height: min(250px, 8vh);
     max-width: 450px;
     max-height: 250px;
     aspect-ratio: 2 / 1;
