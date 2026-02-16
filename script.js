@@ -9,6 +9,7 @@ const keys = document.querySelectorAll(".keyboard .key");
 const flagBtn = document.querySelector(".flagBtn");
 const guessBtn = document.querySelector(".guessBtn");
 const letterLogic = document.querySelector(".letterBoard");
+const clock = document.querySelector(".timeLimit #clock-icon")
 
 let ALLOWED_WORDS = [];
 let SOLUTION_WORDS = [];
@@ -26,6 +27,22 @@ async function loadWords(wordLength) {
     console.log("Allowed:", ALLOWED_WORDS.length);
     console.log("Solutions:", SOLUTION_WORDS.length);
 }
+
+function rand(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function shakeText(element, intensity = 2) {
+    const x = rand(-intensity, intensity);
+    const y = rand(-intensity, intensity);
+
+    element.style.transform = `translate(${x}px, ${y}px)`;
+}
+
+function stopShake(element) {
+    element.style.transform = "translate(0px, 0px)";
+}
+
 
 function isPlayableWord(word) {
     // Must contain at least 2 vowels
@@ -219,7 +236,6 @@ function initGame(config) {
     letterBoardState.proximityMap =
         buildProximityMap(bombLetters);
 
-    timeHUD.innerText = `⏰ ${Math.floor(timeLimitSeconds / 60).toString().padStart(2, "0")}:${(timeLimitSeconds % 60).toString().padStart(2, "0")}`;
     renderLives(lives);
     return {
         state: "PLAYING",
@@ -234,8 +250,8 @@ function initGame(config) {
         bombLetters,
         lives,
 
-        timeLimitMs: timeLimitSeconds * 1000,
-        timeRemainingMs: timeLimitSeconds * 1000,
+        timeLimitMs: timeLimitSeconds * 1000 + 990,
+        timeRemainingMs: timeLimitSeconds * 1000 + 990,
 
         letterKnowledge,
 
@@ -540,7 +556,8 @@ function startGame() {
     document.body.classList.remove("pre-game"); 
     document.body.classList.add("in-game"); 
     
-    clockInstance = setInterval(timerTick, 1000);
+    clockInstance = setInterval(timerTick, 10);
+    requestAnimationFrame(animateClock);
     sfx.music.volume = 0.3;
     sfx.music.play();
 }
@@ -594,14 +611,65 @@ removeLetter.addEventListener("click", function () {
     removeLastLetter();
 });
 function timerTick() {
-    gameState.timeRemainingMs -= 1000;
-    timeHUD.innerText = `⏰ ${Math.floor(gameState.timeRemainingMs / 60000).toString().padStart(2, "0")}:${((gameState.timeRemainingMs / 1000) % 60).toString().padStart(2, "0")}`;
+    gameState.timeRemainingMs -= 10;
+    updateTimer(Math.floor(gameState.timeRemainingMs / 1000));
     timerRunning = true;
-    if (gameState.timeRemainingMs <= 1) {
-        timeHUD.innerText = `⏰ 00:00`;
+    if (gameState.timeRemainingMs <= 0) {
         handleLoss();
     }
 }
+function updateTimer(secondsLeft) {
+    const total = gameState.timeLimitMs * 1000;
+    const dangerRatio = 1 - (secondsLeft / total);
+
+    const text = document.querySelector(".timeLimit #timer-text");
+    const clock = document.querySelector(".timeLimit #clock-icon");
+
+    text.innerText =  `${Math.floor(secondsLeft / 60).toString().padStart(2, "0")}:${(secondsLeft % 60).toString().padStart(2, "0")}`;
+
+    // Color transition
+    const hue = 120 - (dangerRatio * 120);
+    text.style.color = `hsl(${hue}, 100%, 50%)`;
+
+    // Random shake intensity
+    const intensity = dangerRatio * 2;
+
+    if (dangerRatio > 0.2) {
+        shakeText(text, intensity);
+    } else {
+        stopShake(text);
+    }
+}
+
+let startTime = null;
+
+function animateClock(timestamp) {
+    if (!startTime) startTime = timestamp;
+
+    const elapsed = (timestamp - startTime) / 1000;
+
+    const period = 2; // seconds per full swing cycle
+    const phase = (elapsed % period) / period;
+
+    // Triangle wave mapped to [-π/4, π/4]
+    const omega = 2 * Math.PI / period;
+    const theta = (Math.PI / 4) * Math.sin(omega * elapsed);
+
+
+    // Radius of swing (pixels)
+    const radius = 20;
+
+    const x = radius * Math.sin(theta) - 15;
+    const y = radius * Math.cos(theta) - 15;
+
+    clock.style.transform = `
+        translate(${x}px, ${-y}px)
+        rotate(${theta}rad)
+    `;
+
+    requestAnimationFrame(animateClock);
+}
+
 function renderLives(lives, maxLives = 3) {
     const container = document.getElementById("lives");
     container.innerHTML = "";
