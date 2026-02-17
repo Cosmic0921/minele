@@ -482,7 +482,7 @@ function remapFirstGuessBombs(guess, state) {
             } while (
                 state.bombLetters.has(replacement) ||
                 guess.includes(replacement) ||
-                state.targetWord.includes(letter)
+                state.targetWord.includes(replacement)
             );
 
             state.bombLetters.add(replacement);
