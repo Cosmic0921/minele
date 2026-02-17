@@ -481,7 +481,8 @@ function remapFirstGuessBombs(guess, state) {
                 replacement = alphabet[Math.floor(Math.random() * 26)];
             } while (
                 state.bombLetters.has(replacement) ||
-                guess.includes(replacement)
+                guess.includes(replacement) ||
+                state.targetWord.includes(letter)
             );
 
             state.bombLetters.add(replacement);
