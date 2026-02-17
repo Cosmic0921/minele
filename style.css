@@ -1,3 +1,26 @@
+@font-face {
+    font-family: 'VCRFont';
+    src: url('./HomeVideo-BLG6G.ttf') format('truetype');
+}
+
+#hasteOverlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    font-family: 'VCRFont';
+    font-size: 64px;
+    letter-spacing: 4px;
+    
+    pointer-events: none;
+    opacity: 0;
+    display: none;
+
+    color: red;
+    text-shadow: 0 0 12px rgba(255, 0, 0, 0.7);
+}
+
 /* ---------- PRE-GAME STATE ---------- */
 body.pre-game .wordBuffer {
     left: 50%;

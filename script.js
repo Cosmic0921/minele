@@ -190,6 +190,13 @@ const letterBoardState = {
     revealed: new Set(), 
 };
 
+const hasteState = {
+    active: false,
+    startTime: 0,
+    duration: 2000, // total ms, tune this
+};
+
+
 let gameState;
 (async function start() {
     await loadWords(5);
@@ -326,6 +333,48 @@ function setInputMode(mode) {
     document.body.classList.toggle("guess-mode", mode === "GUESS");
 }
 
+function triggerHaste() {
+    const overlay = document.getElementById("hasteOverlay");
+
+    hasteState.active = true;
+    hasteState.startTime = performance.now();
+
+    overlay.style.display = "block";
+}
+
+function updateHaste(now) {
+    if (!hasteState.active) return;
+
+    const overlay = document.getElementById("hasteOverlay");
+    const elapsed = now - hasteState.startTime;
+    const progress = elapsed / hasteState.duration;
+
+    if (progress >= 1 || !inputLocked) {
+        overlay.style.display = "none";
+        overlay.style.opacity = 0;
+        overlay.style.transform = "translate(-50%, -50%)";
+        hasteState.active = false;
+        return;
+    }
+
+    // Fade curve: fade in fast, fade out slow
+    const opacity =
+        progress < 0.4
+            ? progress / 0.4
+            : 1 - ((progress - 0.4) / 0.6);
+
+    // Shake intensity increases over time
+    const shakeStrength = progress * 10;
+
+    const offsetX = (Math.random() - 0.5) * shakeStrength;
+    const offsetY = (Math.random() - 0.5) * shakeStrength;
+
+    overlay.style.opacity = opacity;
+    overlay.style.transform =
+        `translate(-50%, -50%) translate(${offsetX}px, ${offsetY}px)`;
+}
+
+
 function resolveGuess(state, guess) {
     if (state.state !== "PLAYING") return null;
     if (guess.length !== state.wordLength) return null;
@@ -344,6 +393,7 @@ function resolveGuess(state, guess) {
 
     // First guess remap protection
     if (state.guessCount === 0 && bombHits > 0) {
+        triggerHaste();
         remapFirstGuessBombs(guess, state);
 
         // Rebuild proximity map
@@ -623,6 +673,7 @@ function startGame() {
     document.body.classList.remove("pre-game"); 
     document.body.classList.add("in-game"); 
     
+    requestAnimationFrame(handleHaste);
     clockInstance = setInterval(timerTick, 25);
     shakeInstance = setInterval(shake, 10);
     requestAnimationFrame(animateClock);
@@ -630,6 +681,11 @@ function startGame() {
     sfx.music.play();
 }
 
+function handleHaste(now) {
+    updateHaste(now);
+
+    requestAnimationFrame(handleHaste);
+}
 function handleWin() {
     clearInterval(clockInstance);
     clearInterval(shakeInstance);
