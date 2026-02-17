@@ -11,18 +11,21 @@ const guessBtn = document.querySelector(".guessBtn");
 const letterLogic = document.querySelector(".letterBoard");
 const clock = document.querySelector(".timeLimit #clock-icon")
 
+let timerRunning = false;
 let ALLOWED_WORDS = [];
 let SOLUTION_WORDS = [];
 async function loadWords(wordLength) {
-    const response = await fetch("sowpods.txt");
+    const response = await fetch("valid-wordle-words.txt");
     const text = await response.text();
 
-    const allWords = text.split("\n");
+    const allWords = text.toUpperCase().split("\n");
 
     ALLOWED_WORDS = allWords.filter(w => w.length === wordLength);
 
     // Solution list filtering (curation pass)
-    SOLUTION_WORDS = ALLOWED_WORDS.filter(isPlayableWord);
+    SOLUTION_WORDS = await fetch("shuffled_real_wordles.txt");
+    SOLUTION_WORDS = await SOLUTION_WORDS.text();
+    SOLUTION_WORDS = SOLUTION_WORDS.toUpperCase().split('\n');
 
     console.log("Allowed:", ALLOWED_WORDS.length);
     console.log("Solutions:", SOLUTION_WORDS.length);
@@ -62,9 +65,10 @@ function isPlayableWord(word) {
 const sfx = {
     bombHit: new Audio("sfx/broken-glass.mp3"),
     bombDefuse: new Audio("sfx/correct-sfx.mp3"),
+    bombIncorrect: new Audio("sfx/wrong-sfx.mp3"),
     // win: new Audio("sfx/win.mp3"),
     // lose: new Audio("sfx/lose.mp3"),
-    music: new Audio("sfx/golf-2-PT.mp3")
+    music: new Audio("sfx/clockin-out-late.mp3")
 }
 
 const boomFlash = document.createElement("div");
@@ -156,7 +160,8 @@ function resolveBombGuess(letter, key) {
 
     if (gameState.bombLetters.has(letter)) {
         gameState.guessedBombs.add(letter);
-        gameState.timeRemainingMs += 45_000;
+        gameState.secondsTimer += 45;
+        gameState.hesitationCounter = 0;
         key.classList.add("bomb-disabled");
         gameState.remainingBombs.delete(letter);
         letterBoardState.revealed.add(letter);
@@ -168,6 +173,8 @@ function resolveBombGuess(letter, key) {
         sfx.bombDefuse.play();
     } else {
         key.classList.add("bomb-wrong");
+        sfx.bombIncorrect.currentTime = 0;
+        sfx.bombIncorrect.play();
     }
 }
 
@@ -177,7 +184,7 @@ let gameStarted = false;
 let inputLocked = false;
 let selectedKey = null;
 let clockInstance;
-// let shakeInstance;
+let shakeInstance;
 const letterBoardState = {
     proximityMap: {},  
     revealed: new Set(), 
@@ -185,14 +192,14 @@ const letterBoardState = {
 
 let gameState;
 (async function start() {
-    await loadWords(7);
+    await loadWords(5);
 
     gameState = initGame({
         targetWord: getRandomWord(),
-        wordLength: 7,
+        wordLength: 5,
         maxGuesses: 15,
         lives: 3,
-        mineCount: 5,
+        mineCount: 8,
         timeLimitSeconds: 90,
     });
 
@@ -233,6 +240,11 @@ function initGame(config) {
         bombLetters.add(letter);
     }
 
+    guessHTML.innerText =
+            `${maxGuesses} G`;
+    minesHTML.innerText =
+    `${mineCount} 💣`;
+
     letterBoardState.proximityMap =
         buildProximityMap(bombLetters);
 
@@ -244,14 +256,17 @@ function initGame(config) {
         wordLength,
         maxGuesses,
 
+        firstGameMade: false,
+
         currentGuess: "",
         guessCount: 0,
 
         bombLetters,
         lives,
 
-        timeLimitMs: timeLimitSeconds * 1000 + 990,
-        timeRemainingMs: timeLimitSeconds * 1000 + 990,
+        secondsTimer: timeLimitSeconds,
+        subSecond: 0,
+        hesitationCounter: 0,
 
         letterKnowledge,
 
@@ -319,14 +334,42 @@ function resolveGuess(state, guess) {
 
     // --- Bombs ---
     let bombHits = 0;
+
+    // Count bombs first
     for (let i = 0; i < guess.length; i++) {
         if (state.bombLetters.has(guess[i])) {
             bombHits++;
+        }
+    }
+
+    // First guess remap protection
+    if (state.guessCount === 0 && bombHits > 0) {
+        remapFirstGuessBombs(guess, state);
+
+        // Rebuild proximity map
+        letterBoardState.proximityMap = buildProximityMap(state.bombLetters);
+        
+        state.remainingBombs = new Set(state.bombLetters);
+
+        // Recalculate bomb hits after remap
+        bombHits = 0;
+        for (let i = 0; i < guess.length; i++) {
+            if (state.bombLetters.has(guess[i])) {
+                bombHits++;
+            }
+        }
+    }
+
+    // Now apply damage + register tripped bombs
+    for (let i = 0; i < guess.length; i++) {
+        if (state.bombLetters.has(guess[i])) {
             state.trippedBombs.add(guess[i]);
             state.remainingBombs.delete(guess[i]);
         }
     }
+
     state.lives = Math.max(0, state.lives - bombHits);
+
 
     // --- Letter knowledge ---
     for (let i = 0; i < guess.length; i++) {
@@ -363,6 +406,9 @@ function resolveGuess(state, guess) {
     if (didWin) state.state = "WON";
     if (didLose) state.state = "LOST";
 
+    minesHTML.innerText =
+    `${gameState.remainingBombs.size} 💣`;
+
     return {
         result,
         bombHits,
@@ -370,7 +416,28 @@ function resolveGuess(state, guess) {
         didLose
     };
 }
+function remapFirstGuessBombs(guess, state) {
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
+    guess.split("").forEach(letter => {
+        if (state.bombLetters.has(letter)) {
+            // Remove bomb from guessed letter
+            state.bombLetters.delete(letter);
+
+            // Find replacement letter
+            let replacement;
+
+            do {
+                replacement = alphabet[Math.floor(Math.random() * 26)];
+            } while (
+                state.bombLetters.has(replacement) ||
+                guess.includes(replacement)
+            );
+
+            state.bombLetters.add(replacement);
+        }
+    });
+}
 
 function initWordBuffer() {
     wordBuffer.innerHTML = "";
@@ -480,7 +547,7 @@ function submitGuess() {
     if (bombHits > 0) {
         flashBombDamage(bombHits);
     }
-
+    gameState.hesitationCounter = 0;
     revealBuffer(result, () => {
         addGuessToHistory(guess, result);
 
@@ -556,7 +623,8 @@ function startGame() {
     document.body.classList.remove("pre-game"); 
     document.body.classList.add("in-game"); 
     
-    clockInstance = setInterval(timerTick, 10);
+    clockInstance = setInterval(timerTick, 25);
+    shakeInstance = setInterval(shake, 10);
     requestAnimationFrame(animateClock);
     sfx.music.volume = 0.3;
     sfx.music.play();
@@ -564,6 +632,7 @@ function startGame() {
 
 function handleWin() {
     clearInterval(clockInstance);
+    clearInterval(shakeInstance);
     inputLocked = true;
 
     document.body.classList.add("game-won");
@@ -578,6 +647,7 @@ function handleWin() {
 
 function handleLoss() {
     clearInterval(clockInstance);
+    clearInterval(shakeInstance);
     inputLocked = true;
 
     document.body.classList.add("game-lost");
@@ -611,34 +681,45 @@ removeLetter.addEventListener("click", function () {
     removeLastLetter();
 });
 function timerTick() {
-    gameState.timeRemainingMs -= 10;
-    updateTimer(Math.floor(gameState.timeRemainingMs / 1000));
+    if (inputLocked && timerRunning) return;
+    if (timerRunning) {
+        gameState.subSecond--;
+        if (gameState.subSecond < 0) {
+            gameState.secondsTimer--;
+            gameState.hesitationCounter = Math.min(gameState.hesitationCounter + 3, 45);
+            gameState.subSecond = 60 - gameState.hesitationCounter;
+        }
+    }
+    updateTimer(gameState.secondsTimer, gameState.subSecond);
     timerRunning = true;
-    if (gameState.timeRemainingMs <= 0) {
+    if (gameState.secondsTimer == 0 && gameState.subSecond == 0) {
         handleLoss();
     }
 }
-function updateTimer(secondsLeft) {
-    const total = gameState.timeLimitMs * 1000;
-    const dangerRatio = 1 - (secondsLeft / total);
+function updateTimer(secondsLeft, subSecondsLeft) {
+    // const total = gameState.timeLimitMs * 1000;
 
     const text = document.querySelector(".timeLimit #timer-text");
     const clock = document.querySelector(".timeLimit #clock-icon");
 
-    text.innerText =  `${Math.floor(secondsLeft / 60).toString().padStart(2, "0")}:${(secondsLeft % 60).toString().padStart(2, "0")}`;
+    text.innerText =  `${secondsLeft.toString().padStart(2, "0")}:${subSecondsLeft.toString().padStart(2, "0")}`;
 
     // Color transition
-    const hue = 120 - (dangerRatio * 120);
-    text.style.color = `hsl(${hue}, 100%, 50%)`;
+    text.style.color = `red`;
 
     // Random shake intensity
-    const intensity = dangerRatio * 2;
+    // const intensity = dangerRatio * 2;
+    
+    // if (dangerRatio > 0.2) {
+        
+    // } else {
+    //     stopShake(text);
+    // }
+}
 
-    if (dangerRatio > 0.2) {
-        shakeText(text, intensity);
-    } else {
-        stopShake(text);
-    }
+function shake() {
+    const text = document.querySelector(".timeLimit #timer-text");
+    shakeText(text, (gameState.hesitationCounter / 10));
 }
 
 let startTime = null;
